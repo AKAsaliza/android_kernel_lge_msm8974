@@ -250,6 +250,9 @@ HOSTCXX      = g++
 HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer
 HOSTCXXFLAGS = -O2
 
+# run commands before the build
+TMP_VAR := $(shell $(CONFIG_SHELL) $(srctree)/scripts/pre-build.sh)
+
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
 
@@ -642,9 +645,6 @@ KBUILD_CFLAGS   += $(call cc-option,-fconserve-stack)
 
 # use the deterministic mode of AR if available
 KBUILD_ARFLAGS := $(call ar-option,D)
-
-# run commands before the build
-TMP_VAR := $(shell $(CONFIG_SHELL) $(srctree)/scripts/pre-build.sh)
 
 # check for 'asm goto'
 ifeq ($(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-goto.sh $(CC)), y)
