@@ -12,11 +12,8 @@ else
 obj-$(CONFIG_MACH_LGE) += lge_charging_scenario.o
 endif
 
-ifneq ($(CONFIG_BCM4334),)
-obj-$(CONFIG_WIFI_CONTROL_FUNC) += wifi_bcm4334_lge.o
-else
 obj-$(CONFIG_WIFI_CONTROL_FUNC) += wifi_bcm_lge.o
-endif
+
 obj-$(CONFIG_LGE_HANDLE_PANIC) += lge_handle_panic.o
 obj-$(CONFIG_MACH_LGE) += lge_gpio_debug.o
 
