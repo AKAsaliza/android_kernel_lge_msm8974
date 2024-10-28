@@ -1,7 +1,7 @@
 /*
  * Broadcom Event  protocol definitions
  *
- * Copyright (C) 1999-2016, Broadcom Corporation
+ * Copyright (C) 1999-2014, Broadcom Corporation
  * 
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -23,7 +23,7 @@
  *
  * Dependencies: proto/bcmeth.h
  *
- * $Id: bcmevent.h 644941 2016-06-22 02:46:39Z $
+ * $Id: bcmevent.h 515139 2014-11-13 08:47:48Z $
  *
  */
 
@@ -93,15 +93,6 @@ typedef BWL_PRE_PACKED_STRUCT struct bcm_event {
 	wl_event_msg_t		event;
 	/* data portion follows */
 } BWL_POST_PACKED_STRUCT bcm_event_t;
-
-typedef union bcm_event_msg_u {
-	wl_event_msg_t	event;
-#ifdef HEALTH_CHECK
-	bcm_dngl_event_msg_t	dngl_event;
-#endif /* HEALTH_CHECK */
-
-	/* add new event here */
-} bcm_event_msg_u_t;
 
 #define BCM_MSG_LEN	(sizeof(bcm_event_t) - sizeof(bcmeth_hdr_t) - sizeof(struct ether_header))
 
@@ -238,7 +229,7 @@ typedef union bcm_event_msg_u {
 #define WLC_E_FBT_AUTH_REQ_IND		132	/* FBT Authentication Request Indication */
 #define WLC_E_RSSI_LQM			133	/* Enhancement addition for WLC_E_RSSI */
 #define WLC_E_PFN_GSCAN_FULL_RESULT		134 /* Full probe/beacon (IEs etc) results */
-/* 135 was legacy entry for WLC_E_PFN_SWC can be reused */
+#define WLC_E_PFN_SWC		135 /* Significant change in rssi of bssids being tracked */
 #define WLC_E_PFN_SCAN_COMPLETE	138	/* PFN completed scan of network list */
 
 #define WLC_E_RMC_EVENT			139	/* RMC event */
@@ -250,14 +241,7 @@ typedef union bcm_event_msg_u {
 
 /* define an API for getting the string name of an event */
 extern const char *bcmevent_get_name(uint event_type);
-/* validate if the event is proper and if valid copy event header to event */
-#ifndef SEC_ENHANCEMENT
-extern int is_wlc_event_frame(void *pktdata, wl_event_msg_t *event,
-	uint pktlen);
-#else
-extern int is_wlc_event_frame(void *pktdata, uint pktlen, uint16 exp_usr_subtype,
-	bcm_event_msg_u_t *out_event);
-#endif
+
 
 
 /* Event status codes */

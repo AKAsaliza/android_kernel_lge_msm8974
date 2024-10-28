@@ -1,7 +1,7 @@
 /*
  * Header file of Broadcom Dongle Host Driver (DHD)
  * Prefered Network Offload code and Wi-Fi Location Service(WLS) code.
- * Copyright (C) 1999-2016, Broadcom Corporation
+ * Copyright (C) 1999-2014, Broadcom Corporation
  * 
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -64,9 +64,6 @@
 #ifdef GSCAN_SUPPORT
 
 #define GSCAN_MAX_CH_BUCKETS         8
-#define GSCAN_MAX_CHANNELS_IN_BUCKET     32
-#define GSCAN_MAX_AP_CACHE_PER_SCAN      32
-#define GSCAN_MAX_AP_CACHE               320
 #define GSCAN_BG_BAND_MASK             (1 << 0)
 #define GSCAN_A_BAND_MASK              (1 << 1)
 #define GSCAN_DFS_MASK                 (1 << 2)
@@ -309,10 +306,8 @@ typedef struct dhd_pno_gscan_capabilities {
     int max_ap_cache_per_scan;
     int max_rssi_sample_size;
     int max_scan_reporting_threshold;
-    int max_hotlist_bssids;
-    int max_hotlist_ssids;
+    int max_hotlist_aps;
     int max_significant_wifi_change_aps;
-    int max_bssid_history_entries;
 } dhd_pno_gscan_capabilities_t;
 
 struct dhd_pno_gscan_params {
@@ -362,8 +357,27 @@ typedef struct gscan_hotlist_scan_params {
 	struct bssid_t bssid[1];  /* n bssids to follow */
 } gscan_hotlist_scan_params_t;
 
-#endif /* GSCAN_SUPPORT */
+/* SWC (Significant WiFi Change) params */
+typedef struct gscan_swc_params {
+	/* Rssi averaging window size */
+	uint8 rssi_window;
+	/* Number of scans that the AP has to be absent before
+	 * being declared LOST
+	 */
+	uint8 lost_ap_window;
+	/* if x  Aps have a significant change generate an event. */
+	uint8 swc_threshold;
+	uint8 nbssid;
+	wl_pfn_significant_bssid_t bssid_elem_list[1];
+} gscan_swc_params_t;
 
+typedef struct dhd_pno_significant_bssid {
+	struct ether_addr BSSID;
+	int8 rssi_low_threshold;
+	int8 rssi_high_threshold;
+	struct list_head list;
+} dhd_pno_significant_bssid_t;
+#endif /* GSCAN_SUPPORT */
 typedef union dhd_pno_params {
 	struct dhd_pno_legacy_params params_legacy;
 	struct dhd_pno_batch_params params_batch;
@@ -424,6 +438,8 @@ void dhd_dev_pno_lock_access_batch_results(struct net_device *dev);
 void dhd_dev_pno_unlock_access_batch_results(struct net_device *dev);
 extern int dhd_dev_pno_run_gscan(struct net_device *dev, bool run, bool flush);
 extern int dhd_dev_pno_enable_full_scan_result(struct net_device *dev, bool real_time);
+extern void * dhd_dev_swc_scan_event(struct net_device *dev, const void  *data,
+              int *send_evt_bytes);
 int dhd_retreive_batch_scan_results(dhd_pub_t *dhd);
 extern void * dhd_dev_hotlist_scan_event(struct net_device *dev,
                          const void  *data, int *send_evt_bytes, hotlist_type_t type);
@@ -434,10 +450,6 @@ extern void dhd_dev_gscan_hotlist_cache_cleanup(struct net_device *dev, hotlist_
 extern void dhd_dev_wait_batch_results_complete(struct net_device *dev);
 extern void dhd_dev_end_one_shot_gscan(struct net_device *dev);
 #endif /* GSCAN_SUPPORT */
-#ifdef LPS_SUPPORT
-extern int
-dhd_dev_pno_stop_for_hotlist(struct net_device *dev);
-#endif	/* LPS_SUPPORT */
 /* dhd pno fuctions */
 extern int dhd_pno_stop_for_ssid(dhd_pub_t *dhd);
 extern int dhd_pno_enable(dhd_pub_t *dhd, int enable);
@@ -472,6 +484,7 @@ extern int dhd_pno_initiate_gscan_request(dhd_pub_t *dhd, bool run, bool flush);
 extern int dhd_pno_enable_full_scan_result(dhd_pub_t *dhd, bool real_time_flag);
 extern int dhd_pno_cfg_gscan(dhd_pub_t *dhd, dhd_pno_gscan_cmd_cfg_t type, void *buf);
 extern int dhd_dev_retrieve_batch_scan(struct net_device *dev);
+extern void *dhd_handle_swc_evt(dhd_pub_t *dhd, const void *event_data, int *send_evt_bytes);
 extern void *dhd_handle_hotlist_scan_evt(dhd_pub_t *dhd, const void *event_data,
                        int *send_evt_bytes, hotlist_type_t type);
 extern void *dhd_process_full_gscan_result(dhd_pub_t *dhd, const void *event_data,
