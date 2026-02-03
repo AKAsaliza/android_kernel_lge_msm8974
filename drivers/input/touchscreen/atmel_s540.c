@@ -2078,6 +2078,7 @@ static void mxt_proc_t24_messages(struct mxt_data *data, u8 *message)
 	u8 msg;
 	int x;
 	int y;
+        struct input_dev *input_dev = data->input_dev;
 
 	if (data->in_bootloader)
 		return;
@@ -2119,6 +2120,9 @@ static void mxt_proc_t24_messages(struct mxt_data *data, u8 *message)
 		}
 		dev_info(dev, "Double_Tap!!     %d     %d \n",x,y);
 		send_uevent(knockon_event);
+		input_report_key(input_dev, KEY_WAKEUP, 1);
+		input_report_key(input_dev, KEY_WAKEUP, 0);
+		input_sync(input_dev);
 	}
 }
 
@@ -3618,7 +3622,9 @@ static int mxt_initialize_t100_input_device(struct mxt_data *data)
 	input_dev->close = mxt_input_close;
 
 	set_bit(EV_ABS, input_dev->evbit);
-	set_bit(INPUT_PROP_DIRECT, input_dev->propbit); 
+	set_bit(INPUT_PROP_DIRECT, input_dev->propbit);
+	set_bit(EV_KEY, input_dev->evbit);
+	set_bit(KEY_WAKEUP, input_dev->keybit); 
 	input_set_capability(input_dev, EV_KEY, BTN_TOUCH);
 	/* For multi touch */
 	num_mt_slots = data->num_touchids;
@@ -5172,6 +5178,40 @@ static ssize_t store_lpwg_notify(struct mxt_data *data, const char *buf, size_t 
 		}
 	return count;
 }
+
+/* 
+ * Sysfs - DoubleTap to wake
+ */
+static ssize_t store_double_tap(struct mxt_data *data, const char *buf, size_t count) 
+{
+	int value[1] = {0};
+
+	if (mutex_is_locked(&i2c_suspend_lock)) {
+		TOUCH_INFO_MSG("%s mutex_is_locked \n", __func__);
+	}
+
+	sscanf(buf, "%d", &value[0]);
+
+	if (value[0] > 1) {
+		TOUCH_INFO_MSG("%s Incorrect double tap value. %d\n", __func__, value[0]);
+	} else { 
+		atmel_ts_lpwg(data->client, LPWG_ENABLE, value[0], NULL);
+	}
+
+	return count;
+}
+
+static ssize_t show_double_tap(struct mxt_data *data, char *buf)
+{
+	int count = 0;
+	char c = 0;
+
+	c = data->lpwg_mode ? '1' : '0';
+	count = sprintf(buf, "%c\n", c);
+
+	return count;
+}
+
 #endif
 
 static ssize_t store_use_quick_window(struct mxt_data *data, const char *buf, size_t size)
@@ -5219,6 +5259,7 @@ static LGE_TOUCH_ATTR(keyguard, S_IRUGO | S_IWUSR, NULL, store_keyguard_info);
 #ifdef	MXT_LPWG
 static LGE_TOUCH_ATTR(lpwg_data, S_IRUGO | S_IWUSR, show_lpwg_data, store_lpwg_data);
 static LGE_TOUCH_ATTR(lpwg_notify, S_IRUGO | S_IWUSR, NULL, store_lpwg_notify);
+static LGE_TOUCH_ATTR(dt2w_enable, S_IRUGO | S_IWUSR, show_double_tap, store_double_tap);
 #endif
 static LGE_TOUCH_ATTR(use_quick_window, S_IRUGO | S_IWUSR, NULL, store_use_quick_window);
 
@@ -5247,6 +5288,7 @@ static struct attribute *lge_touch_attribute_list[] = {
 #ifdef	MXT_LPWG
 	&lge_touch_attr_lpwg_data.attr,
 	&lge_touch_attr_lpwg_notify.attr,
+	&lge_touch_attr_dt2w_enable.attr,
 #endif
 	&lge_touch_attr_use_quick_window.attr,
 	NULL
@@ -6023,7 +6065,7 @@ static int mxt_initialize_t9_input_device(struct mxt_data *data)
 			input_set_capability(input_dev, EV_KEY,
 					     data->pdata->t15_keymap[i]);
 	}
-
+ 
 	input_set_drvdata(input_dev, data);
 
 	error = input_register_device(input_dev);
