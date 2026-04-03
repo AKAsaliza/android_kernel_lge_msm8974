@@ -1604,11 +1604,7 @@ static int lo_release(struct gendisk *disk, fmode_t mode)
 {
 	int err;
 	mutex_lock(&loop_index_mutex);
-<<<<<<< HEAD
-	err =__lo_release(disk->private_data);
-=======
 	err = __lo_release(disk->private_data);
->>>>>>> 0229eed81a9 (UPSTREAM: loop: fix concurrent lo_open/lo_release)
 	mutex_unlock(&loop_index_mutex);
 	return err;
 }
